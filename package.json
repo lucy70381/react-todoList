@@ -1,6 +1,6 @@
 {
-  "name": "react-daily-sample",
-  "homepage": "https://hexschool.github.io/react-daily-task-router",
+  "name": "react-todo-list",
+  "homepage": "https://lucy70381.github.io/react-todoList/",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
