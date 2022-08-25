@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/react-daily-task-router/static/css/main.6c2acfe7.css",
+    "main.js": "/react-daily-task-router/static/js/main.14523ffc.js",
+    "index.html": "/react-daily-task-router/index.html",
+    "main.6c2acfe7.css.map": "/react-daily-task-router/static/css/main.6c2acfe7.css.map",
+    "main.14523ffc.js.map": "/react-daily-task-router/static/js/main.14523ffc.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.6c2acfe7.css",
+    "static/js/main.14523ffc.js"
+  ]
+}
