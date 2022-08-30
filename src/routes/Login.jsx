@@ -1,24 +1,24 @@
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/Context';
 import FormInput from '../components/FormInput';
 import * as TodoAPI from '../utils/TodoAPI';
 
-
-
 const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const navigate = useNavigate();
-  const { setToken } = useAuth();
+  const { setUserData } = useAuth();
 
   const onSubmit = async (data) => {
     const userData = { user: data };
     const res = await TodoAPI.login(userData);
     if (res?.ok) {
-      setToken(res.headers.get('authorization'));
+      const { nickname } = await res.json();
+      setUserData({ token: res.headers.get('authorization'), nickname });
       navigate('/todo', { replace: true });
     }
-  }
+  };
 
   const loginFormatList = [
     {
@@ -29,10 +29,10 @@ const Login = () => {
       verify: {
         require: '此欄位必填',
         pattern: {
-          value: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g,
+          value: /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/g,
           message: 'Email 格式不符',
-        }
-      }
+        },
+      },
     },
     {
       id: 'password',
@@ -43,11 +43,11 @@ const Login = () => {
         require: '此欄位必填',
         minLength: {
           value: 6,
-          message: '密碼長度必須至少六位'
-        }
-      }
-    }
-  ]
+          message: '密碼長度必須至少六位',
+        },
+      },
+    },
+  ];
 
   return (
     <div id='loginPage' className='bg-yellow'>
@@ -59,7 +59,7 @@ const Login = () => {
         <div>
           <form className='formControls' onSubmit={handleSubmit(onSubmit)}>
             <h2 className='formControls_txt'>最實用的線上代辦事項服務</h2>
-            {loginFormatList?.map(item => (
+            {loginFormatList?.map((item) => (
               <FormInput key={item.id} data={item} register={register} errors={errors} />
             ))}
             <input className='formControls_btnSubmit' type='submit' value='登入' disabled={Object.keys(errors)?.length > 0} />

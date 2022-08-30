@@ -1,13 +1,13 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import React, { Navigate, Outlet } from 'react-router-dom';
 
 import { useAuth } from '../components/Context';
 
 const HomeRoute = () => {
-  const { token } = useAuth();
+  const { userData: { token } } = useAuth();
   if (token) {
-    return <Navigate to='/todo' replace />
+    return <Navigate to='/todo' replace />;
   }
-  return <Outlet />
-}
+  return <Outlet />;
+};
 
 export default HomeRoute;

@@ -1,94 +1,176 @@
-import { useState } from 'react';
+/* eslint-disable camelcase */
+import React, { useEffect, useState, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate } from 'react-router-dom';
+
 import TodoListItem from '../components/TodoListItem';
-import { NavLink } from 'react-router-dom';
+import * as TodoAPI from '../utils/TodoAPI';
+import { useAuth } from '../components/Context';
 
 const Todo = () => {
-  const [event, setEvent] = useState('');
+  const [content, setContent] = useState('');
   const [currentTab, setCurrentTab] = useState('全部');
+  const [list, setList] = useState([]);
+  const { userData: { token, nickname }, setUserData } = useAuth();
+  const navigate = useNavigate();
 
-  const [list, setList] = useState(
-    [
-      { id: 1, done: true, name: '把冰箱發霉的檸檬拿去丟' },
-      { id: 2, done: false, name: '打電話叫媽媽匯款給我' },
-      { id: 3, done: false, name: '整理電腦資料夾' },
-      { id: 4, done: false, name: '繳電費水費瓦斯費' },
-      { id: 5, done: false, name: '約vicky禮拜三泡溫泉' },
-      { id: 6, done: false, name: '約ada禮拜四吃晚餐' },
-    ]
-  );
+  useEffect(() => {
+    async function fetchData() {
+      if (token) {
+        const res = await TodoAPI.getTodos(token);
+        if (res.success) {
+          setList(res?.todos ?? []);
+        }
+      }
+    }
+    fetchData();
+  }, [token]);
 
-  const onSubmit = () => {
-    setList(prev => ([...prev, { id: Date.now(), done: false, name: event }]));
-    setEvent('');
-  }
+  const onSubmit = async () => {
+    if (content) {
+      const body = { todo: { content } };
+      const { success, id } = await TodoAPI.addTodo(token, body);
+      if (success) {
+        setList((prev) => [
+          ...prev,
+          { id, completed_at: null, content },
+        ]);
+        setContent('');
+      }
+    }
+  };
 
   const onClickTab = (e) => {
     setCurrentTab(e.target.name);
-  }
+  };
 
-  const changeState = (id) => {
-    setList(prevList => (
-      prevList?.map(item => {
+  const changeState = useCallback(async (id) => {
+    const { success, completed_at } = await TodoAPI.toggleTodo(token, id);
+    if (success) {
+      setList((prevList) => prevList?.map((item) => {
         if (item.id !== id) return item;
-        return { ...item, done: !item.done }
-      })
-    ));
-  }
+        return { ...item, completed_at };
+      }));
+    }
+  }, [token]);
 
-  const deleteEvent = (id) => {
-    setList(prevList => (prevList?.filter(event => event.id !== id)));
-  }
+  const deleteEvent = useCallback(async (id) => {
+    const { success } = await TodoAPI.deleteTodo(token, id);
+    if (success) {
+      setList((prevList) => prevList.filter((event) => event.id !== id));
+    }
+  }, [token]);
 
-  const clearDone = () => {
-    setList(prevList => (prevList?.filter(item => item.done === false)));
-  }
+  const clearDone = useCallback(() => {
+    const completeList = list.filter((item) => item.completed_at !== null);
+    (async () => {
+      for (let i = 0; i < completeList.length; i += 1) {
+        deleteEvent(completeList[i].id);
+      }
+    })();
+  }, [deleteEvent, list]);
 
+  const logout = useCallback(async () => {
+    const { success } = await TodoAPI.logout(token);
+    if (success) {
+      setUserData({ token: null, nickname: null });
+      navigate('/login', { replace: true });
+    }
+  }, [navigate, setUserData, token]);
 
   return (
     <div id='todoListPage' className='bg-half'>
       <nav>
-        <h1><a>ONLINE TODO LIST</a></h1>
+        <h1><div>ONLINE TODO LIST</div></h1>
+        <div className='nav-right'>
+
+          <p>{`${nickname}的代辦`}</p>
+          <button type='button' onClick={logout}>登出</button>
+        </div>
       </nav>
       <div className='conatiner todoListPage vhContainer'>
         <div className='todoList_Content'>
           <div className='inputBox'>
-            <input type='text' placeholder='請輸入待辦事項' value={event} onChange={e => setEvent(e.target.value)} />
-            <a onClick={onSubmit}>
+            <input
+              type='text'
+              placeholder='請輸入待辦事項'
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            />
+            <button type='button' onClick={onSubmit}>
               <FontAwesomeIcon icon={faPlus} />
-            </a>
+            </button>
           </div>
-          {list?.length === 0 ? <p>目前尚無代辦事項</p> :
+          {list?.length === 0 ? (
+            <p>目前尚無代辦事項</p>
+          ) : (
             <div className='todoList_list'>
               <ul className='todoList_tab'>
-                <li><a className={currentTab === '全部' ? 'active' : ''} name='全部' onClick={onClickTab}>全部</a></li>
-                <li><a className={currentTab === '待完成' ? 'active' : ''} name='待完成' onClick={onClickTab}>待完成</a></li>
-                <li><a className={currentTab === '已完成' ? 'active' : ''} name='已完成' onClick={onClickTab}>已完成</a></li>
+                <li>
+                  <button
+                    className={currentTab === '全部' ? 'active' : ''}
+                    name='全部'
+                    type='button'
+                    onClick={onClickTab}
+                  >
+                    全部
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type='button'
+                    className={currentTab === '待完成' ? 'active' : ''}
+                    name='待完成'
+                    onClick={onClickTab}
+                  >
+                    待完成
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type='button'
+                    className={currentTab === '已完成' ? 'active' : ''}
+                    name='已完成'
+                    onClick={onClickTab}
+                  >
+                    已完成
+                  </button>
+                </li>
               </ul>
               <div className='todoList_items'>
                 <ul className='todoList_item'>
-                  {list?.filter(event => {
-                    if (currentTab === '全部') return true;
-                    else if (currentTab === '待完成') return event.done === false;
-                    else if (currentTab === '已完成') return event.done === true;
-                  }).map((item, index) => {
-                    return (
-                      <TodoListItem item={item} key={item.id} changeState={changeState} deleteEvent={deleteEvent} />
-                    )
-                  })}
+                  {list
+                    .filter((event) => {
+                      if (currentTab === '待完成') return event.completed_at === null;
+                      if (currentTab === '已完成') return event.completed_at !== null;
+                      return true;
+                    })
+                    .map((item) => (
+                      <TodoListItem
+                        item={item}
+                        key={item.id}
+                        changeState={changeState}
+                        deleteEvent={deleteEvent}
+                      />
+                    ))}
                 </ul>
                 <div className='todoList_statistics'>
-                  <p> {list?.filter(item => item.done === false)?.length} 個待完成項目</p>
-                  <a onClick={clearDone}>清除已完成項目</a>
+                  <p>
+                    {' '}
+                    {list.filter((item) => !item.completed_at).length}
+                    {' '}
+                    個待完成項目
+                  </p>
+                  <button type='button' onClick={clearDone}>清除已完成項目</button>
                 </div>
               </div>
             </div>
-          }
+          )}
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default Todo;
